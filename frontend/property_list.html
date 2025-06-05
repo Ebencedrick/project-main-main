@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Property Listings</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="container">
+      <div class="logo">RealEstate</div>
+      <ul class="nav-links">
+        <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
+        <li><a href="property_list.html" class="nav-link"><i class="fas fa-building"></i> Properties</a></li>
+        <li><a href="index.html#contact" class="nav-link"><i class="fas fa-envelope"></i> Contact</a></li>
+        <li><a href="login.html" class="nav-link"><i class="fas fa-user"></i> Login/Register</a></li>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const navLinks = document.querySelectorAll('.nav-link');
+      const current = window.location.pathname.split('/').pop();
+      navLinks.forEach(link => {
+        const href = link.getAttribute('href');
+        if ((href === current) || (href === '#' && window.location.hash)) {
+          link.classList.add('active');
+        } else if (href !== '#' && current === '' && href === 'index.html') {
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
+      </ul>
+      <div class="menu-toggle"><i class="fas fa-bars"></i></div>
+    </div>
+  </nav>
+  <div class="container">
+    <aside class="sidebar">
+      <h3>Filter</h3>
+      <form id="filter-form" class="filter-box" style="background:rgba(255,255,255,0.95);box-shadow:0 2px 8px rgba(30,144,255,0.06);border-radius:12px;padding:0.7em 1em;display:flex;flex-wrap:wrap;gap:0.7em;align-items:center;justify-content:center;margin-bottom:1.2em;max-width:700px;">
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:0.1em;min-width:110px;">
+          <label for="type" style="font-weight:600;color:#1E90FF;font-size:0.85em;">Type</label>
+          <select id="type" name="type" style="padding:0.4em 0.7em;border-radius:6px;border:1px solid #cce0fa;font-size:0.97em;min-width:100px;">
+            <option value="">All Types</option>
+            <option value="apartment">Apartment</option>
+            <option value="house">House</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:0.1em;min-width:110px;">
+          <label for="location" style="font-weight:600;color:#1E90FF;font-size:0.85em;">Location</label>
+          <select id="location" name="location" style="padding:0.4em 0.7em;border-radius:6px;border:1px solid #cce0fa;font-size:0.97em;min-width:100px;">
+            <option value="">All Locations</option>
+            <option value="city1">City 1</option>
+            <option value="city2">City 2</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:0.1em;min-width:110px;">
+          <label for="min_price" style="font-weight:600;color:#1E90FF;font-size:0.85em;">Min Price</label>
+          <input type="number" id="min_price" name="min_price" placeholder="Min" style="padding:0.4em 0.7em;border-radius:6px;border:1px solid #cce0fa;font-size:0.97em;min-width:80px;">
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:0.1em;min-width:110px;">
+          <label for="max_price" style="font-weight:600;color:#1E90FF;font-size:0.85em;">Max Price</label>
+          <input type="number" id="max_price" name="max_price" placeholder="Max" style="padding:0.4em 0.7em;border-radius:6px;border:1px solid #cce0fa;font-size:0.97em;min-width:80px;">
+        </div>
+        <button class="btn" type="submit" style="margin-top:1em;min-width:90px;font-size:1em;padding:0.5em 1.2em;">Apply</button>
+      </form>
+    </aside>
+    <main class="property-list">
+      <div class="property-grid">
+        <div class="card">
+          <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80" alt="Property">
+          <h3>Modern Apartment</h3>
+          <p>City 1</p>
+          <p><b>$250,000</b></p>
+          <a href="property_detail.html?id=1" class="btn">View Details</a>
+        </div>
+        <div class="card">
+          <img src="https://images.unsplash.com/photo-1460518451285-97b6aa326961?auto=format&fit=crop&w=400&q=80" alt="Property">
+          <h3>Luxury Villa</h3>
+          <p>City 2</p>
+          <p><b>$750,000</b></p>
+          <a href="property_detail.html?id=2" class="btn">View Details</a>
+        </div>
+        <div class="card">
+          <img src="https://images.unsplash.com/photo-1507089947368-19c1da9775ae?auto=format&fit=crop&w=400&q=80" alt="Property">
+          <h3>Cozy House</h3>
+          <p>City 1</p>
+          <p><b>$320,000</b></p>
+          <a href="property_detail.html?id=3" class="btn">View Details</a>
+        </div>
+        <div class="card">
+          <img src="https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&w=400&q=80" alt="Upcoming Project">
+          <h3>Skyline Towers (Upcoming)</h3>
+          <p>City 2</p>
+          <p>From $400,000</p>
+          <a href="property_detail.html?id=4" class="btn">Learn More</a>
+        </div>
+        <div class="card">
+          <img src="https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=400&q=80" alt="Upcoming Project">
+          <h3>Green Valley Homes (Upcoming)</h3>
+          <p>City 1</p>
+          <p>From $350,000</p>
+          <a href="property_detail.html?id=5" class="btn">Learn More</a>
+        </div>
+        <div class="card">
+          <img src="https://images.unsplash.com/photo-1519974719765-e6559eac2575?auto=format&fit=crop&w=400&q=80" alt="Property">
+          <h3>Downtown Loft</h3>
+          <p>City 2</p>
+          <p><b>$420,000</b></p>
+          <a href="property_detail.html?id=6" class="btn">View Details</a>
+        </div>
+      </div>
+      <div class="pagination">
+        <!-- Pagination controls -->
+      </div>
+    </main>
+  </div>
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2025 RealEstate. All rights reserved.</p>
+    </div>
+  </footer>
+  <script src="main.js"></script>
+</body>
+</html>

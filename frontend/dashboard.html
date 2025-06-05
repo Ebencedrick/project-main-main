@@ -1,0 +1,830 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { margin: 0; background: linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 100%); font-family: 'Segoe UI', Arial, sans-serif; min-height: 100vh; }
+    .admin-topbar { width: 100%; background: linear-gradient(90deg, #2563eb 60%, #38bdf8 100%); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 1.1em 2em; box-shadow: 0 2px 12px rgba(37,99,235,0.10); position: fixed; top: 0; left: 0; z-index: 1000; }
+    .admin-topbar .logo { font-size: 1.5em; font-weight: 800; letter-spacing: 1px; }
+    .admin-topbar .topbar-right { display: flex; align-items: center; gap: 1.5em; }
+    .admin-topbar .user { font-weight: 600; font-size: 1em; display: flex; align-items: center; gap: 0.5em; }
+    .admin-topbar .logout { color: #fff; background: #dc3545; border: none; border-radius: 6px; padding: 0.5em 1.1em; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .admin-topbar .logout:hover { background: #b91c1c; }
+    .admin-layout { display: flex; margin-top: 70px; min-height: 100vh; }
+    .admin-sidebar { width: 150px; background: linear-gradient(135deg, #f0fdfa 60%, #e0e7ff 100%); box-shadow: 2px 0 16px rgba(37,99,235,0.10); border-radius: 0 16px 16px 0; padding: 2.2em 0.5em 2em 0.5em; display: flex; flex-direction: column; gap: 2em; position: fixed; top: 70px; left: 0; bottom: 0; z-index: 900; }
+    .admin-sidebar ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 1.2em; }
+    .admin-sidebar a { color: #334155; font-weight: 600; border-radius: 8px; padding: 0.7em 1em; display: flex; align-items: center; gap: 0.7em; text-decoration: none; transition: background 0.2s, color 0.2s; }
+    .admin-sidebar a.active, .admin-sidebar a:hover { background: linear-gradient(90deg, #2563eb 60%, #38bdf8 100%); color: #fff; box-shadow: 0 2px 8px rgba(37,99,235,0.10); }
+    .admin-main { flex: 1; margin-left: 150px; padding: 2.5em 2em 2em 2em; background: transparent; min-height: 100vh; }
+    @media (max-width: 900px) { .admin-layout { flex-direction: column; } .admin-sidebar { position: static; width: 100%; border-radius: 0 0 16px 16px; top: 0; } .admin-main { margin-left: 0; } }
+    .section-title { font-size: 2em; font-weight: 800; color: #2563eb; margin-bottom: 1.2em; letter-spacing: 1px; }
+    .users-table { width: 100%; background: linear-gradient(90deg, #f0fdfa 60%, #e0e7ff 100%); border-radius: 14px; box-shadow: 0 2px 12px rgba(37,99,235,0.08); padding: 1.5em; margin-bottom: 2em; overflow-x: auto; }
+    .users-table table { width: 100%; border-collapse: collapse; }
+    .users-table th, .users-table td { padding: 1em 0.7em; text-align: left; border-bottom: 1px solid #c7d2fe; }
+    .users-table th { color: #2563eb; font-size: 1.05em; font-weight: 700; background: #e0e7ff; letter-spacing: 0.5px; }
+    .users-table tr:last-child td { border-bottom: none; }
+    .users-table button { margin-right: 0.5em; border: none; border-radius: 8px; padding: 0.4em 1.1em; font-weight: 600; color: #fff; cursor: pointer; box-shadow: 0 2px 8px rgba(37,99,235,0.10); transition: background 0.2s; }
+    .users-table .edit { background: linear-gradient(90deg, #22d3ee 60%, #38bdf8 100%); color: #fff; }
+    .users-table .edit:hover { background: #0ea5e9; }
+    .users-table .delete { background: linear-gradient(90deg, #f43f5e 60%, #fbbf24 100%); color: #fff; }
+    .users-table .delete:hover { background: #be123c; }
+  </style>
+</head>
+<body>
+  <div class="admin-topbar">
+    <div class="logo"><i class="fas fa-building"></i> RealEstate Agent</div>
+    <div class="topbar-right">
+      <div class="user" id="agentProfileDropdown" style="position:relative;cursor:pointer; font-weight:600; font-size:1em; display:flex; align-items:center; gap:0.5em;">
+        <img id="agentProfileImg" src="https://ui-avatars.com/api/?name=Agent&background=2563eb&color=fff" alt="Profile" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #fff;box-shadow:0 1px 4px rgba(37,99,235,0.10);margin-right:0.5em;vertical-align:middle;">
+        <span style="color:#fff; font-weight:800; letter-spacing:0.5px; text-shadow:0 1px 4px rgba(37,99,235,0.10);">Agent <i class="fas fa-caret-down"></i></span>
+        <input type="file" id="agentProfileImgInput" accept="image/*" style="display:none;">
+        <div id="agentProfileDropdownMenu" style="display:none;position:absolute;right:0;top:110%;background:#fff;border-radius:10px;box-shadow:0 2px 12px rgba(37,99,235,0.12);min-width:180px;z-index:2000;">
+          <a href="#" id="viewAgentProfileBtn" style="display:block;padding:0.9em 1.2em;color:#2563eb;font-weight:600;text-decoration:none;border-bottom:1px solid #e0e7ff;">View Profile</a>
+          <a href="#" id="changeAgentProfileImgBtn" style="display:block;padding:0.9em 1.2em;color:#2563eb;font-weight:600;text-decoration:none;">Change Photo</a>
+        </div>
+      </div>
+      <button class="logout" style="color:#fff; background:#dc3545; border:none; border-radius:6px; padding:0.5em 1.1em; font-weight:600; cursor:pointer; transition:background 0.2s;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+  </div>
+  <div class="admin-layout">
+    <nav class="admin-sidebar">
+      <ul>
+        <li><a href="#" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+        <li><a href="#" id="myPropertiesTab"><i class="fas fa-home"></i> Total Properties</a></li>
+        <li><a href="#" id="savedTab"><i class="fas fa-heart"></i> Saved</a></li>
+        <li><a href="#"><i class="fas fa-envelope"></i> Inquiries</a></li>
+    <li><a href="#" id="postNewPropertyTab"><i class="fas fa-plus"></i> Post New Property</a></li>
+
+
+
+        <li><a href="#" id="messagesTab"><i class="fas fa-comments"></i> Messages</a></li>
+        <li><a href="#" id="settingsTab"><i class="fas fa-cog"></i> Settings</a></li>
+      </ul>
+    </nav>
+    <main class="admin-main">
+      <h2 style="font-size:2.1em; font-weight:800; color:#1E90FF; margin-bottom:1.2em;">Agent Dashboard</h2>
+      <!-- Add Property Section (hidden by default, shown when Post New Property is clicked) -->
+      <section class="dashboard-section" id="addPropertySection" style="display:none;">
+        <h3 style="font-size:1.3em; color:#2563eb; font-weight:700; margin-bottom:1em; letter-spacing:0.5px;">Post New Property</h3>
+        <form id="propertyFormInline" style="background:linear-gradient(90deg,#f0fdfa 60%,#e0e7ff 100%);border-radius:14px;box-shadow:0 2px 12px rgba(37,99,235,0.08);padding:1.5em 2em 1.5em 2em;max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:1.2em;">
+          <div>
+            <label for="propertyTitleInline" style="font-weight:600;color:#2563eb;">Title</label><br>
+            <input type="text" id="propertyTitleInline" name="title" required style="width:100%;padding:0.6em 1em;border-radius:8px;border:1px solid #a5b4fc;font-size:1em;">
+          </div>
+          <div>
+            <label for="propertyTypeInline" style="font-weight:600;color:#2563eb;">Type</label><br>
+            <select id="propertyTypeInline" name="type" required style="width:100%;padding:0.6em 1em;border-radius:8px;border:1px solid #a5b4fc;font-size:1em;">
+              <option value="">Select type</option>
+              <option value="Apartment">Apartment</option>
+              <option value="House">House</option>
+              <option value="Villa">Villa</option>
+              <option value="Land">Land</option>
+            </select>
+          </div>
+          <div>
+            <label for="propertyPriceInline" style="font-weight:600;color:#2563eb;">Price</label><br>
+            <input type="number" id="propertyPriceInline" name="price" required style="width:100%;padding:0.6em 1em;border-radius:8px;border:1px solid #a5b4fc;font-size:1em;">
+          </div>
+          <div>
+            <label for="propertyDescriptionInline" style="font-weight:600;color:#2563eb;">Description</label><br>
+            <textarea id="propertyDescriptionInline" name="description" rows="3" required style="width:100%;padding:0.6em 1em;border-radius:8px;border:1px solid #a5b4fc;font-size:1em;"></textarea>
+          </div>
+          <div>
+            <label style="font-weight:600;color:#2563eb;">Images/Videos (up to 8 files)</label><br>
+            <input type="file" id="modalMediaInputInline" name="media" accept="image/*,video/*" style="display:none;" multiple>
+            <div id="modalMediaPlaceholderInline" style="background:#e0e7ff;border-radius:8px;padding:1em 1.2em;cursor:pointer;text-align:center;">
+              <span id="modalMediaPlaceholderTextInline" style="color:#2563eb;font-weight:600;"><i class="fas fa-image"></i> Upload images or videos (click here, max 8)</span>
+              <div id="mediaPreviewInline" style="margin-top:1em;display:flex;flex-wrap:wrap;gap:0.5em;justify-content:center;"></div>
+            </div>
+          </div>
+          <button type="submit" style="background:linear-gradient(90deg,#2563eb 60%,#38bdf8 100%);color:#fff;border:none;border-radius:8px;padding:0.7em 2em;font-weight:700;font-size:1.1em;box-shadow:0 2px 8px rgba(37,99,235,0.10);transition:background 0.2s;">Add Property</button>
+        </form>
+      </section>
+      <div class="dashboard-cards" id="dashboardCardsContainer" style="display:none; margin-bottom:2em; background:linear-gradient(90deg, #f0fdfa 60%, #e0e7ff 100%); border-radius:16px; box-shadow:0 2px 16px rgba(37,99,235,0.10); padding:2em 1.5em;">
+        <div style="display: flex; gap: 2em; flex-wrap: wrap; justify-content: flex-start;">
+          <div class="dashboard-card" style="background:linear-gradient(90deg,#2563eb 60%,#38bdf8 100%); color:#fff; font-size:1.2em; font-weight:700; box-shadow:0 2px 12px rgba(37,99,235,0.08); border-radius:12px; padding:1.2em 2em; min-width:170px; flex:1 1 170px; max-width:240px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative;">
+            <span style="font-size:2em; margin-bottom:0.3em;"><i class="fas fa-home"></i></span>
+            Total Property<br><span id="property-count" style="font-size:1.5em; font-weight:800;">2</span>
+            <button id="dashboardAddPropertyBtn" style="margin-top:0.8em;background:linear-gradient(90deg,#22d3ee 60%,#38bdf8 100%);color:#fff;border:none;border-radius:8px;padding:0.5em 1.2em;font-weight:700;font-size:0.98em;cursor:pointer;transition:background 0.2s;"><i class="fas fa-plus"></i> Add Property</button>
+          </div>
+          <div class="dashboard-card" style="background:linear-gradient(90deg,#2563eb 60%,#38bdf8 100%); color:#fff; font-size:1.2em; font-weight:700; box-shadow:0 2px 12px rgba(37,99,235,0.08); border-radius:12px; padding:1.2em 2em; min-width:170px; flex:1 1 170px; max-width:240px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+            <span style="font-size:2em; margin-bottom:0.3em;"><i class="fas fa-heart"></i></span>
+            Saved<br><span id="saved-count" style="font-size:1.5em; font-weight:800;">5</span>
+          </div>
+          <div class="dashboard-card" style="background:linear-gradient(90deg,#2563eb 60%,#38bdf8 100%); color:#fff; font-size:1.2em; font-weight:700; box-shadow:0 2px 12px rgba(37,99,235,0.08); border-radius:12px; padding:1.2em 2em; min-width:170px; flex:1 1 170px; max-width:240px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+            <span style="font-size:2em; margin-bottom:0.3em;"><i class="fas fa-envelope"></i></span>
+            Inquiries<br><span id="inquiry-count" style="font-size:1.5em; font-weight:800;">3</span>
+          </div>
+          <div class="dashboard-card" style="background:linear-gradient(90deg,#2563eb 60%,#38bdf8 100%); color:#fff; font-size:1.2em; font-weight:700; box-shadow:0 2px 12px rgba(37,99,235,0.08); border-radius:12px; padding:1.2em 2em; min-width:170px; flex:1 1 170px; max-width:240px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+            <span style="font-size:2em; margin-bottom:0.3em;"><i class="fas fa-comments"></i></span>
+            Messages<br><span id="message-count" style="font-size:1.5em; font-weight:800;">4</span>
+          </div>
+        </div>
+      </div>
+      <section class="dashboard-section" id="recentActivitySection" style="display:none;">
+        <h3 style="font-size:1.3em; color:#2563eb; font-weight:700; margin-bottom:1em; letter-spacing:0.5px;">Recent Activity</h3>
+        <div class="activity-log" style="display:flex; gap:1em; flex-wrap:wrap; padding-left:0; color:#222;">
+          <div class="activity-item" style="background:linear-gradient(90deg, #e0e7ff 60%, #f0fdfa 100%); border-radius:10px; box-shadow:0 1px 8px rgba(37,99,235,0.06); padding:1em 1.3em; color:#222; min-width:220px; display:flex; align-items:center; gap:0.7em;"><i class="fas fa-home" style="color:#1E90FF;"></i> Property "Modern Apartment" submitted for approval</div>
+          <div class="activity-item" style="background:linear-gradient(90deg, #e0e7ff 60%, #f0fdfa 100%); border-radius:10px; box-shadow:0 1px 8px rgba(37,99,235,0.06); padding:1em 1.3em; color:#222; min-width:220px; display:flex; align-items:center; gap:0.7em;"><i class="fas fa-check-circle" style="color:#28a745;"></i> Property "Cozy House" approved</div>
+          <div class="activity-item" style="background:linear-gradient(90deg, #e0e7ff 60%, #f0fdfa 100%); border-radius:10px; box-shadow:0 1px 8px rgba(37,99,235,0.06); padding:1em 1.3em; color:#222; min-width:220px; display:flex; align-items:center; gap:0.7em;"><i class="fas fa-heart" style="color:#f43f5e;"></i> You saved "Luxury Villa"</div>
+        </div>
+      </section>
+
+      <section class="dashboard-section" id="myPropertiesSection" style="display:none;">
+        <h3 style="font-size:1.3em; color:#2563eb; font-weight:700; margin-bottom:1em; letter-spacing:0.5px;"> total Properties</h3>
+        <div class="users-table" style="width:100%; background:linear-gradient(90deg, #f0fdfa 60%, #e0e7ff 100%); border-radius:14px; box-shadow:0 2px 12px rgba(37,99,235,0.08); padding:1.5em; margin-bottom:2em; overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse;">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Price</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Modern Apartment</td>
+                <td>Apartment</td>
+                <td>$120,000</td>
+                <td><span style="color:#28a745;font-weight:600;">Approved</span></td>
+                <td>
+                  <button class="edit" style="background:linear-gradient(90deg, #22d3ee 60%, #38bdf8 100%); color:#fff; border:none; border-radius:8px; padding:0.4em 1.1em; font-weight:600; cursor:pointer; margin-right:0.5em;">Edit</button>
+                  <button class="delete" style="background:linear-gradient(90deg, #f43f5e 60%, #fbbf24 100%); color:#fff; border:none; border-radius:8px; padding:0.4em 1.1em; font-weight:600; cursor:pointer;">Delete</button>
+                </td>
+              </tr>
+              <tr>
+                <td>Cozy House</td>
+                <td>House</td>
+                <td>$200,000</td>
+                <td><span style="color:#fbbf24;font-weight:600;">Pending</span></td>
+                <td>
+                  <button class="edit" style="background:linear-gradient(90deg, #22d3ee 60%, #38bdf8 100%); color:#fff; border:none; border-radius:8px; padding:0.4em 1.1em; font-weight:600; cursor:pointer; margin-right:0.5em;">Edit</button>
+                  <button class="delete" style="background:linear-gradient(90deg, #f43f5e 60%, #fbbf24 100%); color:#fff; border:none; border-radius:8px; padding:0.4em 1.1em; font-weight:600; cursor:pointer;">Delete</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section class="dashboard-section">
+        <h3 style="font-size:1.3em; color:#2563eb; font-weight:700; margin-bottom:1em; letter-spacing:0.5px;">Quick Actions</h3>
+        <div class="quick-actions" style="display:flex; gap:1.5em; margin-top:1em;">
+          <button id="addPropertyBtn" class="edit" style="background:linear-gradient(90deg, #2563eb 60%, #38bdf8 100%); color:#fff; border:none; border-radius:8px; padding:0.7em 1.5em; font-weight:600; font-size:1em; cursor:pointer; transition:background 0.2s;"><i class="fas fa-plus"></i> Add New Property</button>
+          <button id="viewEnquiriesBtn" class="edit" style="background:linear-gradient(90deg, #2563eb 60%, #38bdf8 100%); color:#fff; border:none; border-radius:8px; padding:0.7em 1.5em; font-weight:600; font-size:1em; cursor:pointer; transition:background 0.2s;"><i class="fas fa-envelope"></i> View Enquiries</button>
+        </div>
+      </section>
+
+      <!-- Quick Actions Modal -->
+      <div id="quickActionsModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.25);z-index:2100;align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:16px;box-shadow:0 4px 32px rgba(37,99,235,0.13);max-width:400px;width:90vw;padding:2.2em 2em 1.5em 2em;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);">
+          <button id="closeQuickActionsModal" style="position:absolute;top:1em;right:1em;background:none;border:none;font-size:1.3em;color:#2563eb;cursor:pointer;"><i class="fas fa-times"></i></button>
+          <h3 style="color:#2563eb;font-weight:800;margin-bottom:1em;">Quick Actions</h3>
+          <div style="display:flex;flex-direction:column;gap:1.2em;">
+            <button id="modalAddPropertyBtn" style="background:linear-gradient(90deg,#2563eb 60%,#38bdf8 100%);color:#fff;border:none;border-radius:8px;padding:0.7em 1.5em;font-weight:700;font-size:1em;cursor:pointer;"><i class="fas fa-plus"></i> Add New Property</button>
+            <button id="modalViewEnquiriesBtn" style="background:linear-gradient(90deg,#2563eb 60%,#38bdf8 100%);color:#fff;border:none;border-radius:8px;padding:0.7em 1.5em;font-weight:700;font-size:1em;cursor:pointer;"><i class="fas fa-envelope"></i> View Enquiries</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Property Modal -->
+
+
+      <!-- Enquiries Modal -->
+      <section id="enquiriesSection" class="dashboard-section" style="display:none;">
+        <h3 style="color:#2563eb;font-weight:800;margin-bottom:1em;">Inquiries</h3>
+        <div id="inquiriesList" style="max-width:600px;margin:0 auto 2em auto;">
+          <!-- Inquiries will be rendered here -->
+        </div>
+        <div id="inquiryReplyBox" style="display:none;background:#e0e7ff;border-radius:10px;padding:1.2em 1.5em;max-width:500px;margin:0 auto;">
+          <h4 style="color:#2563eb;font-weight:700;margin-bottom:0.7em;">Reply to Inquiry</h4>
+          <div style="margin-bottom:0.7em;"><b>User Email:</b> <span id="inquiryUserEmail"></span></div>
+          <div style="margin-bottom:0.7em;"><b>Message:</b> <span id="inquiryUserMessage"></span></div>
+          <form id="inquiryReplyForm">
+            <textarea id="inquiryReplyText" rows="3" required placeholder="Type your reply here..." style="width:100%;padding:0.7em 1em;border-radius:8px;border:1px solid #a5b4fc;font-size:1em;margin-bottom:0.7em;"></textarea>
+            <button type="submit" style="background:linear-gradient(90deg,#2563eb 60%,#38bdf8 100%);color:#fff;border:none;border-radius:8px;padding:0.7em 2em;font-weight:700;font-size:1em;">Send Reply</button>
+            <button type="button" id="closeInquiryReplyBox" style="margin-left:1em;background:#e0e7ff;color:#2563eb;border:none;border-radius:8px;padding:0.7em 2em;font-weight:700;font-size:1em;">Cancel</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Saved Properties Section (not modal) -->
+      <section id="savedSection" class="dashboard-section" style="display:none;">
+        <h3 style="color:#2563eb;font-weight:800;margin-bottom:1em;">Saved Properties</h3>
+        <div id="savedPropertiesList" style="max-width:700px;margin:0 auto 2em auto;"></div>
+        <div id="noSavedPropertiesMsg" style="color:#888;text-align:center;display:none;">No saved properties yet.</div>
+      </section>
+
+      <!-- Settings Section (not modal) -->
+      <section id="settingsSection" class="dashboard-section" style="display:none;">
+        <h3 style="color:#2563eb;font-weight:800;margin-bottom:1em;">Settings</h3>
+        <form id="settingsForm" style="background:linear-gradient(90deg,#f0fdfa 60%,#e0e7ff 100%);border-radius:14px;box-shadow:0 2px 12px rgba(37,99,235,0.08);padding:2em 2.5em 1.5em 2.5em;max-width:420px;margin:0 auto;display:flex;flex-direction:column;gap:1.2em;">
+          <div>
+            <label for="agentEmail" style="font-weight:600;color:#2563eb;">Email</label><br>
+            <input type="email" id="agentEmail" name="agentEmail" value="agent@example.com" style="width:100%;padding:0.7em 1em;border-radius:8px;border:1px solid #a5b4fc;font-size:1em;">
+          </div>
+          <div>
+            <label for="agentPassword" style="font-weight:600;color:#2563eb;">Password</label><br>
+            <input type="password" id="agentPassword" name="agentPassword" placeholder="Change password" style="width:100%;padding:0.7em 1em;border-radius:8px;border:1px solid #a5b4fc;font-size:1em;">
+          </div>
+          <button type="submit" style="background:linear-gradient(90deg,#2563eb 60%,#38bdf8 100%);color:#fff;border:none;border-radius:8px;padding:0.8em 2em;font-weight:700;font-size:1.1em;box-shadow:0 2px 8px rgba(37,99,235,0.10);transition:background 0.2s;">Save</button>
+        </form>
+      </section>
+
+      <!-- Messages/Chat Section (not a modal) -->
+      <section id="messagesSection" class="dashboard-section" style="display:none;">
+        <h3 style="color:#2563eb;font-weight:800;margin-bottom:1em;">Messages</h3>
+        <div style="display:flex;gap:1.2em;flex:1;min-height:300px;">
+          <div id="chatContacts" style="min-width:120px;max-width:140px;background:#e0e7ff;border-radius:8px;padding:0.7em 0.5em;display:flex;flex-direction:column;gap:0.5em;">
+            <div class="chat-contact active" data-contact="Admin" style="padding:0.6em 1em;border-radius:7px;cursor:pointer;background:#2563eb;color:#fff;font-weight:600;">Admin</div>
+            <div class="chat-contact" data-contact="User1" style="padding:0.6em 1em;border-radius:7px;cursor:pointer;background:#fff;color:#2563eb;font-weight:600;">User1</div>
+            <div class="chat-contact" data-contact="User2" style="padding:0.6em 1em;border-radius:7px;cursor:pointer;background:#fff;color:#2563eb;font-weight:600;">User2</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;">
+            <div id="chatHistory" style="flex:1;overflow-y:auto;background:#f0fdfa;border-radius:8px;padding:1em 1.2em;margin-bottom:1em;min-height:180px;"></div>
+            <form id="chatForm" style="display:flex;gap:0.7em;">
+              <input type="text" id="chatInput" placeholder="Type a message..." style="flex:1;padding:0.6em 1em;border-radius:8px;border:1px solid #a5b4fc;font-size:1em;">
+              <button type="submit" style="background:linear-gradient(90deg,#2563eb 60%,#38bdf8 100%);color:#fff;border:none;border-radius:8px;padding:0.7em 1.5em;font-weight:700;font-size:1em;"><i class="fas fa-paper-plane"></i></button>
+            </form>
+          </div>
+        </div>
+      </section>
+      </section>
+    </main>
+  </div>
+
+  <!-- Contact section and footer removed as requested -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+  <script>
+    // --- Post New Property Sidebar Link Logic (show inline form in main content) ---
+    const postNewPropertyTab = document.getElementById('postNewPropertyTab');
+    const addPropertySection = document.getElementById('addPropertySection');
+    if (postNewPropertyTab && addPropertySection) {
+      postNewPropertyTab.addEventListener('click', function(e) {
+        e.preventDefault();
+        // Hide all dashboard sections and cards
+        document.querySelectorAll('.dashboard-section').forEach(sec => sec.style.display = 'none');
+        const dashboardCardsContainer = document.getElementById('dashboardCardsContainer');
+        if (dashboardCardsContainer) dashboardCardsContainer.style.display = 'none';
+        // Show the add property section
+        addPropertySection.style.display = '';
+      });
+    }
+    // Inline Add Property form logic
+    const propertyFormInline = document.getElementById('propertyFormInline');
+    const modalMediaInputInline = document.getElementById('modalMediaInputInline');
+    const modalMediaPlaceholderInline = document.getElementById('modalMediaPlaceholderInline');
+    const modalMediaPlaceholderTextInline = document.getElementById('modalMediaPlaceholderTextInline');
+    if (propertyFormInline) propertyFormInline.onsubmit = function(e) {
+      e.preventDefault();
+      alert('Property added! (Demo only)');
+      propertyFormInline.reset();
+      if (modalMediaPlaceholderTextInline) modalMediaPlaceholderTextInline.innerHTML = `<i class='fas fa-image'></i> Upload images or videos (click here, max 8)`;
+      const mediaPreviewInline = document.getElementById('mediaPreviewInline');
+      if (mediaPreviewInline) mediaPreviewInline.innerHTML = '';
+    };
+    if (modalMediaInputInline && modalMediaPlaceholderInline) {
+      modalMediaPlaceholderInline.onclick = () => modalMediaInputInline.click();
+      modalMediaInputInline.onchange = function() {
+        const files = modalMediaInputInline.files;
+        const mediaPreviewInline = document.getElementById('mediaPreviewInline');
+        if (files && files.length > 0) {
+          if (files.length > 8) {
+            alert('You can upload up to 8 files only.');
+            modalMediaInputInline.value = '';
+            if (modalMediaPlaceholderTextInline) modalMediaPlaceholderTextInline.innerHTML = `<i class='fas fa-image'></i> Upload images or videos (click here, max 8)`;
+            if (mediaPreviewInline) mediaPreviewInline.innerHTML = '';
+            return;
+          }
+          let names = [];
+          if (mediaPreviewInline) mediaPreviewInline.innerHTML = '';
+          Array.from(files).forEach(file => {
+            names.push(file.name);
+            if (mediaPreviewInline) {
+              let el;
+              if (file.type.startsWith('image/')) {
+                el = document.createElement('img');
+                el.style.width = '48px';
+                el.style.height = '48px';
+                el.style.objectFit = 'cover';
+                el.style.borderRadius = '6px';
+                const reader = new FileReader();
+                reader.onload = function(e) { el.src = e.target.result; };
+                reader.readAsDataURL(file);
+                mediaPreviewInline.appendChild(el);
+              } else if (file.type.startsWith('video/')) {
+                el = document.createElement('span');
+                el.innerHTML = `<i class='fas fa-video' style='font-size:2em;color:#2563eb;'></i>`;
+                el.title = file.name;
+                mediaPreviewInline.appendChild(el);
+              }
+            }
+          });
+          if (modalMediaPlaceholderTextInline) modalMediaPlaceholderTextInline.innerHTML = `<i class='fas fa-file'></i> ${names.join(', ')}`;
+        } else {
+          if (modalMediaPlaceholderTextInline) modalMediaPlaceholderTextInline.innerHTML = `<i class='fas fa-image'></i> Upload images or videos (click here, max 8)`;
+          if (mediaPreviewInline) mediaPreviewInline.innerHTML = '';
+        }
+      };
+    }
+    // --- Quick Actions Modal Logic ---
+    const quickActionsSection = document.querySelector('.dashboard-section .quick-actions');
+    const quickActionsModal = document.getElementById('quickActionsModal');
+    const closeQuickActionsModal = document.getElementById('closeQuickActionsModal');
+    const modalAddPropertyBtn = document.getElementById('modalAddPropertyBtn');
+    const modalViewEnquiriesBtn = document.getElementById('modalViewEnquiriesBtn');
+
+    // Show Quick Actions modal when section is clicked
+    if (quickActionsSection) {
+      quickActionsSection.onclick = function(e) {
+        // Only open if not clicking a button inside
+        if (e.target.tagName === 'BUTTON') return;
+        quickActionsModal.style.display = 'flex';
+      };
+    }
+    if (closeQuickActionsModal) closeQuickActionsModal.onclick = () => quickActionsModal.style.display = 'none';
+    // Open Add Property/Enquiries modals from Quick Actions modal
+    if (modalAddPropertyBtn) modalAddPropertyBtn.onclick = () => {
+      quickActionsModal.style.display = 'none';
+      document.getElementById('addPropertyModal').style.display = 'flex';
+    };
+    if (modalViewEnquiriesBtn) modalViewEnquiriesBtn.onclick = () => {
+      quickActionsModal.style.display = 'none';
+      // Show the new inquiries section instead of modal
+      showOnlySection(document.getElementById('enquiriesSection'));
+      renderInquiries();
+    };
+    // Also keep original button logic
+    if (document.getElementById('addPropertyBtn')) document.getElementById('addPropertyBtn').onclick = (e) => { e.stopPropagation(); document.getElementById('addPropertyModal').style.display = 'flex'; };
+    if (document.getElementById('viewEnquiriesBtn')) document.getElementById('viewEnquiriesBtn').onclick = (e) => { e.stopPropagation(); showOnlySection(document.getElementById('enquiriesSection')); renderInquiries(); };
+    if (document.getElementById('closePropertyModal')) document.getElementById('closePropertyModal').onclick = () => document.getElementById('addPropertyModal').style.display = 'none';
+    // --- Inquiries Section Logic ---
+    // Demo data for inquiries (can be replaced with backend integration)
+    let inquiries = [
+      { id: 1, name: 'User1', email: 'user1@example.com', message: 'Interested in "Modern Apartment"', date: '2025-06-01 10:15', replied: false, reply: '' },
+      { id: 2, name: 'User2', email: 'user2@example.com', message: 'Request for more info on "Cozy House"', date: '2025-06-02 14:30', replied: false, reply: '' }
+    ];
+
+    function renderInquiries() {
+      const inquiriesList = document.getElementById('inquiriesList');
+      if (!inquiriesList) return;
+      if (inquiries.length === 0) {
+        inquiriesList.innerHTML = '<div style="color:#888;text-align:center;">No inquiries yet.</div>';
+        return;
+      }
+      inquiriesList.innerHTML = '';
+      inquiries.forEach(inq => {
+        const div = document.createElement('div');
+        div.style.background = inq.replied ? '#d1fae5' : '#e0e7ff';
+        div.style.borderRadius = '8px';
+        div.style.padding = '1em 1.2em';
+        div.style.marginBottom = '1em';
+        div.style.display = 'flex';
+        div.style.justifyContent = 'space-between';
+        div.style.alignItems = 'center';
+        let info = `<div><b>${inq.name}</b> &lt;${inq.email}&gt;<br><span style='color:#2563eb;'>${inq.message}</span><br><span style='font-size:0.95em;color:#888;'>${inq.date}</span>`;
+        if (inq.replied && inq.reply) {
+          info += `<br><span style='color:#059669;font-size:0.98em;'><i class='fas fa-check-circle'></i> Replied: ${inq.reply}</span>`;
+        }
+        info += `</div>`;
+        let btn = '';
+        if (!inq.replied) {
+          btn = `<button class='replyInquiryBtn' data-id='${inq.id}' style='background:linear-gradient(90deg,#2563eb 60%,#38bdf8 100%);color:#fff;border:none;border-radius:8px;padding:0.5em 1.2em;font-weight:700;cursor:pointer;'>Reply</button>`;
+        } else {
+          btn = `<button class='replyInquiryBtn' data-id='${inq.id}' style='background:#e0e7ff;color:#2563eb;border:none;border-radius:8px;padding:0.5em 1.2em;font-weight:700;cursor:pointer;' disabled>Replied</button>`;
+        }
+        div.innerHTML = info + btn;
+        inquiriesList.appendChild(div);
+      });
+      // Add event listeners for reply buttons
+      document.querySelectorAll('.replyInquiryBtn').forEach(btn => {
+        btn.onclick = function() {
+          const id = parseInt(this.getAttribute('data-id'));
+          showInquiryReplyBox(id);
+        };
+      });
+    }
+
+    function showInquiryReplyBox(id) {
+      const inquiry = inquiries.find(i => i.id === id);
+      if (!inquiry) return;
+      document.getElementById('inquiryUserEmail').textContent = inquiry.email;
+      document.getElementById('inquiryUserMessage').textContent = inquiry.message;
+      document.getElementById('inquiryReplyBox').style.display = '';
+      document.getElementById('inquiryReplyText').value = '';
+      document.getElementById('inquiryReplyForm').onsubmit = function(e) {
+        e.preventDefault();
+        const reply = document.getElementById('inquiryReplyText').value.trim();
+        if (!reply) return;
+        // Open mailto link
+        window.location.href = `mailto:${inquiry.email}?subject=Reply to your inquiry&body=${encodeURIComponent(reply)}`;
+        inquiry.replied = true;
+        inquiry.reply = reply;
+        document.getElementById('inquiryReplyBox').style.display = 'none';
+        document.getElementById('inquiryReplyText').value = '';
+        renderInquiries();
+      };
+      document.getElementById('closeInquiryReplyBox').onclick = function() {
+        document.getElementById('inquiryReplyBox').style.display = 'none';
+        document.getElementById('inquiryReplyText').value = '';
+      };
+    }
+    // --- Modal Logic for Panels ---
+    const addPropertyBtn = document.getElementById('addPropertyBtn');
+    const addPropertyModal = document.getElementById('addPropertyModal');
+    const closePropertyModal = document.getElementById('closePropertyModal');
+    const propertyForm = document.getElementById('propertyForm');
+    const modalMediaInput = document.getElementById('modalMediaInput');
+    const modalMediaPlaceholder = document.getElementById('modalMediaPlaceholder');
+    const modalMediaPlaceholderText = document.getElementById('modalMediaPlaceholderText');
+    // Ensure all Add Property buttons open the modal with display:flex for centering
+    if (addPropertyBtn) addPropertyBtn.onclick = function(e) {
+      e.preventDefault();
+      addPropertyModal.style.display = 'flex';
+      addPropertyModal.style.alignItems = 'center';
+      addPropertyModal.style.justifyContent = 'center';
+    };
+    // Also handle dashboard card button
+    var dashboardAddPropertyBtn = document.getElementById('dashboardAddPropertyBtn');
+    if (dashboardAddPropertyBtn) {
+      dashboardAddPropertyBtn.onclick = function(e) {
+        e.preventDefault();
+        addPropertyModal.style.display = 'flex';
+        addPropertyModal.style.alignItems = 'center';
+        addPropertyModal.style.justifyContent = 'center';
+      };
+    }
+    if (closePropertyModal) closePropertyModal.onclick = () => addPropertyModal.style.display = 'none';
+    if (propertyForm) propertyForm.onsubmit = function(e) {
+      e.preventDefault();
+      alert('Property added! (Demo only)');
+      addPropertyModal.style.display = 'none';
+      propertyForm.reset();
+      if (modalMediaPlaceholderText) modalMediaPlaceholderText.innerHTML = `<i class='fas fa-image'></i> Upload image or video (click here)`;
+    };
+    if (modalMediaInput && modalMediaPlaceholder) {
+      modalMediaPlaceholder.onclick = () => modalMediaInput.click();
+      modalMediaInput.onchange = function() {
+        if (modalMediaInput.files && modalMediaInput.files[0]) {
+          modalMediaPlaceholderText.innerHTML = `<i class='fas fa-file'></i> ${modalMediaInput.files[0].name}`;
+        } else {
+          modalMediaPlaceholderText.innerHTML = `<i class='fas fa-image'></i> Upload image or video (click here)`;
+        }
+      };
+    }
+    // Enquiries Modal
+    const viewEnquiriesBtn = document.getElementById('viewEnquiriesBtn');
+    const enquiriesModal = document.getElementById('enquiriesModal');
+    const closeEnquiriesModal = document.getElementById('closeEnquiriesModal');
+    if (viewEnquiriesBtn) viewEnquiriesBtn.onclick = () => enquiriesModal.style.display = 'flex';
+    if (closeEnquiriesModal) closeEnquiriesModal.onclick = () => enquiriesModal.style.display = 'none';
+    // --- Saved Properties Section Logic ---
+    const savedSection = document.getElementById('savedSection');
+    const savedTab = document.getElementById('savedTab');
+    const savedPropertiesList = document.getElementById('savedPropertiesList');
+    const noSavedPropertiesMsg = document.getElementById('noSavedPropertiesMsg');
+    // Demo data for saved properties (can be replaced with backend integration)
+    let savedProperties = [
+      {
+        id: 1,
+        title: 'Luxury Villa',
+        type: 'Villa',
+        price: 450000,
+        status: 'Available',
+        image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80',
+        details: 'A beautiful luxury villa with pool and garden.'
+      },
+      {
+        id: 2,
+        title: 'Modern Apartment',
+        type: 'Apartment',
+        price: 120000,
+        status: 'Available',
+        image: 'https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=400&q=80',
+        details: 'Modern apartment in the city center with 2 bedrooms.'
+      }
+    ];
+
+    function renderSavedProperties() {
+      if (!savedPropertiesList) return;
+      savedPropertiesList.innerHTML = '';
+      if (savedProperties.length === 0) {
+        if (noSavedPropertiesMsg) noSavedPropertiesMsg.style.display = '';
+        return;
+      } else {
+        if (noSavedPropertiesMsg) noSavedPropertiesMsg.style.display = 'none';
+      }
+      savedProperties.forEach(prop => {
+        const card = document.createElement('div');
+        card.className = 'saved-property-card';
+        card.style.display = 'flex';
+        card.style.alignItems = 'center';
+        card.style.background = '#e0e7ff';
+        card.style.borderRadius = '12px';
+        card.style.boxShadow = '0 2px 8px rgba(37,99,235,0.08)';
+        card.style.padding = '1em 1.2em';
+        card.style.marginBottom = '1.2em';
+        card.style.gap = '1.2em';
+        card.style.transition = 'box-shadow 0.2s';
+        card.onmouseover = () => card.style.boxShadow = '0 4px 16px rgba(37,99,235,0.16)';
+        card.onmouseout = () => card.style.boxShadow = '0 2px 8px rgba(37,99,235,0.08)';
+
+        const img = document.createElement('img');
+        img.src = prop.image;
+        img.alt = prop.title;
+        img.style.width = '80px';
+        img.style.height = '80px';
+        img.style.objectFit = 'cover';
+        img.style.borderRadius = '8px';
+        img.style.boxShadow = '0 1px 4px rgba(37,99,235,0.10)';
+
+        const info = document.createElement('div');
+        info.style.flex = '1';
+        info.innerHTML = `<div style='font-size:1.15em;font-weight:700;color:#2563eb;'>${prop.title}</div>
+          <div style='color:#334155;font-size:0.98em;margin-bottom:0.3em;'>${prop.type} &bull; $${prop.price.toLocaleString()} &bull; <span style='color:#059669;'>${prop.status}</span></div>
+          <div style='color:#555;font-size:0.97em;'>${prop.details}</div>`;
+
+        const actions = document.createElement('div');
+        actions.style.display = 'flex';
+        actions.style.flexDirection = 'column';
+        actions.style.gap = '0.5em';
+
+        const viewBtn = document.createElement('button');
+        viewBtn.textContent = 'View';
+        viewBtn.style.background = 'linear-gradient(90deg,#2563eb 60%,#38bdf8 100%)';
+        viewBtn.style.color = '#fff';
+        viewBtn.style.border = 'none';
+        viewBtn.style.borderRadius = '8px';
+        viewBtn.style.padding = '0.5em 1.2em';
+        viewBtn.style.fontWeight = '700';
+        viewBtn.style.cursor = 'pointer';
+        viewBtn.onclick = () => {
+          alert(`Viewing property: ${prop.title}\n\n${prop.details}`);
+        };
+
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = 'Remove';
+        removeBtn.style.background = 'linear-gradient(90deg,#f43f5e 60%,#fbbf24 100%)';
+        removeBtn.style.color = '#fff';
+        removeBtn.style.border = 'none';
+        removeBtn.style.borderRadius = '8px';
+        removeBtn.style.padding = '0.5em 1.2em';
+        removeBtn.style.fontWeight = '700';
+        removeBtn.style.cursor = 'pointer';
+        removeBtn.onclick = () => {
+          if (confirm(`Remove "${prop.title}" from saved properties?`)) {
+            savedProperties = savedProperties.filter(p => p.id !== prop.id);
+            renderSavedProperties();
+            // Update saved count in dashboard card if present
+            const savedCount = document.getElementById('saved-count');
+            if (savedCount) savedCount.textContent = savedProperties.length;
+          }
+        };
+
+        actions.appendChild(viewBtn);
+        actions.appendChild(removeBtn);
+
+        card.appendChild(img);
+        card.appendChild(info);
+        card.appendChild(actions);
+        savedPropertiesList.appendChild(card);
+      });
+    }
+
+    if (savedTab) savedTab.onclick = (e) => {
+      e.preventDefault();
+      showOnlySection(savedSection);
+      renderSavedProperties();
+    };
+    // Settings Section (not modal)
+    const settingsSection = document.getElementById('settingsSection');
+    if (settingsTab) settingsTab.onclick = (e) => {
+      e.preventDefault();
+      showOnlySection(settingsSection);
+    };
+    // Inquiries Section (not modal)
+    const enquiriesSection = document.getElementById('enquiriesSection');
+    const enquiriesTab = Array.from(document.querySelectorAll('.admin-sidebar a')).find(a => a.textContent.includes('Inquiries'));
+    if (enquiriesTab) enquiriesTab.onclick = (e) => {
+      e.preventDefault();
+      showOnlySection(enquiriesSection);
+      renderInquiries();
+    };
+    const settingsForm = document.getElementById('settingsForm');
+    if (settingsForm) settingsForm.onsubmit = function(e) {
+      e.preventDefault();
+      alert('Settings saved! (Demo only)');
+    };
+    // Section switching logic for sidebar (show only the selected section, including dashboard cards)
+    const messagesSection = document.getElementById('messagesSection');
+    const myPropertiesSection = document.getElementById('myPropertiesSection');
+    const recentActivitySection = document.getElementById('recentActivitySection');
+    const dashboardCardsContainer = document.getElementById('dashboardCardsContainer');
+    const myPropertiesTab = document.getElementById('myPropertiesTab');
+    const sidebarLinks = document.querySelectorAll('.admin-sidebar a');
+    // Find dashboard tab
+    const dashboardTab = Array.from(sidebarLinks).find(a => a.textContent.includes('Dashboard'));
+
+    function showOnlySection(section) {
+      document.querySelectorAll('.dashboard-section').forEach(sec => sec.style.display = 'none');
+      if (dashboardCardsContainer) dashboardCardsContainer.style.display = 'none';
+      if (section === recentActivitySection) {
+        if (dashboardCardsContainer) dashboardCardsContainer.style.display = '';
+      }
+      if (section) section.style.display = '';
+    }
+
+    if (dashboardTab) dashboardTab.onclick = (e) => {
+      e.preventDefault();
+      showOnlySection(recentActivitySection);
+    };
+    if (myPropertiesTab) myPropertiesTab.onclick = (e) => {
+      e.preventDefault();
+      showOnlySection(myPropertiesSection);
+    };
+    if (messagesTab) messagesTab.onclick = (e) => {
+      e.preventDefault();
+      showOnlySection(messagesSection);
+    };
+    // Show nothing by default (all dashboard sections and cards hidden)
+    // Chat logic (demo, in-memory)
+    const chatContacts = document.getElementById('chatContacts');
+    const chatHistory = document.getElementById('chatHistory');
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+    let chatData = {
+      'Admin': [
+        { sender: 'Agent', text: 'Hi Admin, I have a new property for review.' },
+        { sender: 'Admin', text: 'Thanks, I will check it soon.' }
+      ],
+      'User1': [
+        { sender: 'User1', text: 'Is the "Modern Apartment" still available?' },
+        { sender: 'Agent', text: 'Yes, it is available.' }
+      ],
+      'User2': [
+        { sender: 'User2', text: 'Can I schedule a visit for "Cozy House"?' },
+        { sender: 'Agent', text: 'Sure, let me know your preferred time.' }
+      ]
+    };
+    let currentContact = 'Admin';
+    function renderChat() {
+      if (!chatHistory) return;
+      chatHistory.innerHTML = '';
+      (chatData[currentContact] || []).forEach(msg => {
+        const div = document.createElement('div');
+        div.style.marginBottom = '0.7em';
+        div.style.textAlign = msg.sender === 'Agent' ? 'right' : 'left';
+        div.innerHTML = `<span style="display:inline-block;background:${msg.sender==='Agent'?'#2563eb':'#e0e7ff'};color:${msg.sender==='Agent'?'#fff':'#2563eb'};padding:0.5em 1em;border-radius:8px;max-width:70%;font-size:1em;">${msg.text}</span>`;
+        chatHistory.appendChild(div);
+      });
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+    }
+    if (chatContacts) {
+      chatContacts.querySelectorAll('.chat-contact').forEach(contact => {
+        contact.onclick = function() {
+          chatContacts.querySelectorAll('.chat-contact').forEach(c => c.classList.remove('active'));
+          this.classList.add('active');
+          currentContact = this.getAttribute('data-contact');
+          renderChat();
+        };
+      });
+    }
+    if (chatForm) {
+      chatForm.onsubmit = function(e) {
+        e.preventDefault();
+        const val = chatInput.value.trim();
+        if (!val) return;
+        if (!chatData[currentContact]) chatData[currentContact] = [];
+        chatData[currentContact].push({ sender: 'Agent', text: val });
+        chatInput.value = '';
+        renderChat();
+      };
+    }
+    // Render initial chat
+    renderChat();
+    // --- Agent Profile Dropdown & Image Upload ---
+    const agentProfileDropdown = document.getElementById('agentProfileDropdown');
+    const agentProfileDropdownMenu = document.getElementById('agentProfileDropdownMenu');
+    const agentProfileImgInput = document.getElementById('agentProfileImgInput');
+    const agentProfileImg = document.getElementById('agentProfileImg');
+    const changeAgentProfileImgBtn = document.getElementById('changeAgentProfileImgBtn');
+    const viewAgentProfileBtn = document.getElementById('viewAgentProfileBtn');
+
+    // Toggle dropdown
+    agentProfileDropdown.addEventListener('click', function(e) {
+      if (e.target === changeAgentProfileImgBtn) return; // handled below
+      agentProfileDropdownMenu.style.display = agentProfileDropdownMenu.style.display === 'block' ? 'none' : 'block';
+    });
+    document.addEventListener('click', function(e) {
+      if (!agentProfileDropdown.contains(e.target)) agentProfileDropdownMenu.style.display = 'none';
+    });
+
+    // Change profile image
+    changeAgentProfileImgBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      agentProfileImgInput.click();
+    });
+    agentProfileImgInput.addEventListener('change', function() {
+      if (agentProfileImgInput.files && agentProfileImgInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          agentProfileImg.src = e.target.result;
+        };
+        reader.readAsDataURL(agentProfileImgInput.files[0]);
+      }
+    });
+
+    // --- Agent Profile Modal ---
+    // Modal HTML
+    const agentProfileModal = document.createElement('div');
+    agentProfileModal.id = 'agentProfileModal';
+    agentProfileModal.style.display = 'none';
+    agentProfileModal.style.position = 'fixed';
+    agentProfileModal.style.top = '0';
+    agentProfileModal.style.left = '0';
+    agentProfileModal.style.width = '100vw';
+    agentProfileModal.style.height = '100vh';
+    agentProfileModal.style.background = 'rgba(30, 41, 59, 0.18)';
+    agentProfileModal.style.zIndex = '3000';
+    agentProfileModal.innerHTML = `
+      <div style="background:#fff;border-radius:16px;box-shadow:0 4px 32px rgba(37,99,235,0.13);max-width:370px;width:90vw;padding:2.2em 2em 1.5em 2em;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:1em;">
+          <img id="modalAgentProfileImg" src="https://ui-avatars.com/api/?name=Agent&background=2563eb&color=fff" style="width:70px;height:70px;border-radius:50%;object-fit:cover;border:2px solid #2563eb;box-shadow:0 1px 4px rgba(37,99,235,0.10);">
+          <form id="agentProfileModalForm" style="width:100%;display:flex;flex-direction:column;gap:1em;align-items:center;">
+            <div style="width:100%;">
+              <label style="font-weight:600;color:#2563eb;">Name</label>
+              <input type="text" id="modalAgentName" value="Agent" style="width:100%;padding:0.6em 1em;border-radius:8px;border:1px solid #a5b4fc;font-size:1em;" disabled>
+            </div>
+            <div style="width:100%;">
+              <label style="font-weight:600;color:#2563eb;">Email</label>
+              <input type="email" id="modalAgentEmail" value="agent@example.com" style="width:100%;padding:0.6em 1em;border-radius:8px;border:1px solid #a5b4fc;font-size:1em;" disabled>
+            </div>
+            <div style="width:100%;">
+              <label style="font-weight:600;color:#2563eb;">Password</label>
+              <input type="password" id="modalAgentPassword" value="" placeholder="Change password" style="width:100%;padding:0.6em 1em;border-radius:8px;border:1px solid #a5b4fc;font-size:1em;" disabled>
+            </div>
+            <div style="display:flex;gap:1em;justify-content:center;width:100%;margin-top:0.5em;">
+              <button type="button" id="editAgentProfileBtn" style="background:linear-gradient(90deg,#2563eb 60%,#38bdf8 100%);color:#fff;border:none;border-radius:8px;padding:0.7em 1.5em;font-weight:700;font-size:1em;">Edit</button>
+              <button type="submit" id="saveAgentProfileBtn" style="background:linear-gradient(90deg,#6EE7B7 60%,#2563eb 100%);color:#fff;border:none;border-radius:8px;padding:0.7em 1.5em;font-weight:700;font-size:1em;display:none;">Save</button>
+              <button type="button" id="closeAgentProfileBtn" style="background:#e0e7ff;color:#2563eb;border:none;border-radius:8px;padding:0.7em 1.5em;font-weight:700;font-size:1em;">Close</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(agentProfileModal);
+
+    // Open modal
+    viewAgentProfileBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      document.getElementById('modalAgentProfileImg').src = agentProfileImg.src;
+      document.getElementById('modalAgentName').value = 'Agent';
+      document.getElementById('modalAgentEmail').value = 'agent@example.com';
+      document.getElementById('modalAgentPassword').value = '';
+      document.getElementById('modalAgentName').disabled = true;
+      document.getElementById('modalAgentEmail').disabled = true;
+      document.getElementById('modalAgentPassword').disabled = true;
+      document.getElementById('editAgentProfileBtn').style.display = '';
+      document.getElementById('saveAgentProfileBtn').style.display = 'none';
+      agentProfileModal.style.display = 'block';
+      agentProfileDropdownMenu.style.display = 'none';
+    });
+    // Edit button
+    agentProfileModal.addEventListener('click', function(e) {
+      if (e.target.id === 'editAgentProfileBtn') {
+        document.getElementById('modalAgentName').disabled = false;
+        document.getElementById('modalAgentEmail').disabled = false;
+        document.getElementById('modalAgentPassword').disabled = false;
+        document.getElementById('editAgentProfileBtn').style.display = 'none';
+        document.getElementById('saveAgentProfileBtn').style.display = '';
+      }
+    });
+    // Save button
+    document.getElementById('agentProfileModalForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      agentProfileModal.style.display = 'none';
+      alert('Profile updated! (Demo only)');
+    });
+    // Close button
+    agentProfileModal.addEventListener('click', function(e) {
+      if (e.target.id === 'closeAgentProfileBtn') {
+        agentProfileModal.style.display = 'none';
+      }
+    });
+
+    // Logout button logic
+    const logoutBtn = document.querySelector('.logout');
+    if(logoutBtn) logoutBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      window.location.href = 'login.html';
+    });
+
+    // (replaced by modal logic above, removed duplicate tab logic)
+  </script>
+</body>
+</html>
