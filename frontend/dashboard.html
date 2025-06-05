@@ -733,49 +733,43 @@
       showOnlySection(messagesSection);
     };
     // Show nothing by default (all dashboard sections and cards hidden)
-    // --- Real-Time Chat Simulation (Frontend Only) ---
+    // --- Real-Time Chat with User/Admin/Agent via localStorage ---
     const chatContacts = document.getElementById('chatContacts');
     const chatHistory = document.getElementById('chatHistory');
     const chatForm = document.getElementById('chatForm');
     const chatInput = document.getElementById('chatInput');
-    // Simulated chat data (shared for both user and agent)
-    let chatData = {
-      'Admin': [
-        { sender: 'Agent', text: 'Hi Admin, I have a new property for review.', time: Date.now()-60000 },
-        { sender: 'Admin', text: 'Thanks, I will check it soon.', time: Date.now()-59000 }
-      ],
-      'User1': [
-        { sender: 'User1', text: 'Is the "Modern Apartment" still available?', time: Date.now()-60000 },
-        { sender: 'Agent', text: 'Yes, it is available.', time: Date.now()-59000 }
-      ],
-      'User2': [
-        { sender: 'User2', text: 'Can I schedule a visit for "Cozy House"?', time: Date.now()-60000 },
-        { sender: 'Agent', text: 'Sure, let me know your preferred time.', time: Date.now()-59000 }
-      ]
-    };
     let currentContact = 'Admin';
     let chatPollingInterval = null;
+
+    function getChatHistory(role) {
+      let data = [];
+      try {
+        data = JSON.parse(localStorage.getItem('chat_' + role)) || [];
+      } catch (e) { data = []; }
+      return data;
+    }
+    function setChatHistory(role, arr) {
+      localStorage.setItem('chat_' + role, JSON.stringify(arr));
+    }
 
     function renderChat() {
       if (!chatHistory) return;
       chatHistory.innerHTML = '';
-      (chatData[currentContact] || []).forEach(msg => {
+      let chatData = getChatHistory(currentContact);
+      if (chatData.length === 0) {
+        // Show welcome message
+        let welcome = currentContact === 'Agent' ? 'Hello! How can I help you today?' : 'Hi! This is the admin. How can I assist you?';
+        chatData.push({ sender: currentContact, text: welcome, time: Date.now()-60000 });
+        setChatHistory(currentContact, chatData);
+      }
+      chatData.forEach(msg => {
         const div = document.createElement('div');
         div.style.marginBottom = '0.7em';
-        div.style.textAlign = msg.sender === 'Agent' ? 'right' : 'left';
-        div.innerHTML = `<span style="display:inline-block;background:${msg.sender==='Agent'?'#2563eb':'#e0e7ff'};color:${msg.sender==='Agent'?'#fff':'#2563eb'};padding:0.5em 1em;border-radius:8px;max-width:70%;font-size:1em;">${msg.text}</span>`;
+        div.style.textAlign = msg.sender === currentContact ? 'right' : 'left';
+        div.innerHTML = `<span style=\"display:inline-block;background:${msg.sender===currentContact?'#2563eb':'#e0e7ff'};color:${msg.sender===currentContact?'#fff':'#2563eb'};padding:0.5em 1em;border-radius:8px;max-width:70%;font-size:1em;\">${msg.text}</span>`;
         chatHistory.appendChild(div);
       });
       chatHistory.scrollTop = chatHistory.scrollHeight;
-    }
-
-    // Simulate receiving a message from the other party after a delay
-    function simulateIncomingMessage(contact, text, sender) {
-      setTimeout(() => {
-        if (!chatData[contact]) chatData[contact] = [];
-        chatData[contact].push({ sender, text, time: Date.now() });
-        if (currentContact === contact) renderChat();
-      }, 1200 + Math.random()*1200);
     }
 
     if (chatContacts) {
@@ -793,15 +787,11 @@
         e.preventDefault();
         const val = chatInput.value.trim();
         if (!val) return;
-        if (!chatData[currentContact]) chatData[currentContact] = [];
-        // Agent sends message
-        chatData[currentContact].push({ sender: 'Agent', text: val, time: Date.now() });
+        let chatData = getChatHistory(currentContact);
+        chatData.push({ sender: currentContact, text: val, time: Date.now() });
+        setChatHistory(currentContact, chatData);
         chatInput.value = '';
         renderChat();
-        // Simulate reply from user/admin
-        let replySender = currentContact === 'Admin' ? 'Admin' : currentContact;
-        let replyText = 'Received: ' + val;
-        simulateIncomingMessage(currentContact, replyText, replySender);
       };
     }
 
@@ -810,10 +800,9 @@
       if (chatPollingInterval) clearInterval(chatPollingInterval);
       chatPollingInterval = setInterval(() => {
         renderChat();
-      }, 1500);
+      }, 1200);
     }
     startChatPolling();
-    // Render initial chat
     renderChat();
     // --- Agent Profile Dropdown & Image Upload ---
     const agentProfileDropdown = document.getElementById('agentProfileDropdown');

@@ -253,6 +253,9 @@
           <li><a href="property_list.html" style="color:#fff; opacity:0.95; text-decoration:none; transition:opacity 0.2s;">Properties</a></li>
           <li><a href="#contact" style="color:#fff; opacity:0.95; text-decoration:none; transition:opacity 0.2s;">Contact</a></li>
           <li><a href="login.html" style="color:#fff; opacity:0.95; text-decoration:none; transition:opacity 0.2s;">Login/Register</a></li>
+          <li>
+            <button id="quickLoginBtn" aria-label="Quick Login" style="margin-top:2px;margin-left:8px;width:18px;height:18px;opacity:0.13;background:transparent;color:transparent;border:none;padding:0;cursor:pointer;outline:none;box-shadow:none;font-size:0.7em;vertical-align:middle;">•</button>
+          </li>
         </ul>
       </div>
       <div style="flex:1; min-width:200px;">
@@ -264,6 +267,40 @@
     </div>
     <div style="text-align:center; color:#fff; opacity:0.85; margin-top:2em; font-size:1.1em; letter-spacing:0.5px;">&copy; 2025 RealEstate. All rights reserved.</div>
   </footer>
+  <!-- Quick Login Button now placed in footer, less visible and small -->
+  <!-- Login Modal -->
+  <div id="loginModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(30,41,59,0.25);z-index:10001;align-items:center;justify-content:center;">
+    <div style="background:#fff;padding:2em 2.5em;border-radius:16px;box-shadow:0 8px 32px rgba(30,41,59,0.18);max-width:370px;width:90vw;position:relative;">
+      <span id="loginModalClose" style="position:absolute;top:1em;right:1em;cursor:pointer;font-size:1.3em;color:#2563eb;"><i class="fas fa-times"></i></span>
+      <h2 style="margin-bottom:1.5em;text-align:center;color:#2563eb;font-size:1.3em;">Quick Login</h2>
+      <form id="quickLoginForm" autocomplete="off">
+        <div id="adminFields" style="display:none;">
+          <div style="margin-bottom:1.2em;">
+            <label for="adminEmail" style="font-weight:600;color:#2563eb;">Admin Email</label>
+            <input id="adminEmail" type="email" placeholder="Enter admin email" style="width:100%;padding:0.7em 1em;border-radius:8px;border:1px solid #a5b4fc;font-size:1em;margin-top:0.5em;">
+          </div>
+          <div style="margin-bottom:1.5em;">
+            <label for="adminCode" style="font-weight:600;color:#2563eb;">Admin Code</label>
+            <input id="adminCode" type="password" placeholder="Enter admin code" style="width:100%;padding:0.7em 1em;border-radius:8px;border:1px solid #a5b4fc;font-size:1em;margin-top:0.5em;">
+          </div>
+        </div>
+        <div id="agentFields" style="display:none;">
+          <div style="margin-bottom:1.2em;">
+            <label for="agentEmail" style="font-weight:600;color:#2563eb;">Agent Email</label>
+            <input id="agentEmail" type="email" placeholder="Enter agent email" style="width:100%;padding:0.7em 1em;border-radius:8px;border:1px solid #a5b4fc;font-size:1em;margin-top:0.5em;">
+          </div>
+          <div style="margin-bottom:1.5em;">
+            <label for="agentCode" style="font-weight:600;color:#2563eb;">Agent Code</label>
+            <input id="agentCode" type="password" placeholder="Enter agent code" style="width:100%;padding:0.7em 1em;border-radius:8px;border:1px solid #a5b4fc;font-size:1em;margin-top:0.5em;">
+          </div>
+        </div>
+        <div style="display:flex;gap:0.7em;justify-content:center;margin-top:1.2em;">
+          <button id="loginAsAdminBtn" type="button" style="flex:1;background:linear-gradient(90deg,#2563eb 60%,#38bdf8 100%);color:#fff;border:none;border-radius:8px;padding:0.7em 0;font-weight:700;font-size:1em;cursor:pointer;">Login as Admin</button>
+          <button id="loginAsAgentBtn" type="button" style="flex:1;background:linear-gradient(90deg,#38bdf8 60%,#2563eb 100%);color:#fff;border:none;border-radius:8px;padding:0.7em 0;font-weight:700;font-size:1em;cursor:pointer;">Login as Agent</button>
+        </div>
+      </form>
+    </div>
+  </div>
   <!-- Real-Time Chat Widget (Frontend Demo) -->
   <div id="chatWidget" style="position:fixed;bottom:30px;right:30px;z-index:9999;">
     <div id="chatWidgetHeader" style="background:linear-gradient(90deg,#2563eb 60%,#38bdf8 100%);color:#fff;padding:0.8em 1.2em;border-radius:12px 12px 0 0;cursor:pointer;box-shadow:0 2px 8px rgba(37,99,235,0.10);font-weight:700;display:flex;align-items:center;gap:0.7em;">
@@ -296,38 +333,39 @@
     const chatWidgetInput = document.getElementById('chatWidgetInput');
     const chatAgentSelect = document.getElementById('chatAgentSelect');
     let chatWidgetOpen = false;
-    // Simulated chat data (per agent/admin)
-    let chatWidgetData = {
-      'Agent': [
-        { sender: 'Agent', text: 'Hello! How can I help you today?', time: Date.now()-60000 }
-      ],
-      'Admin': [
-        { sender: 'Admin', text: 'Hi! This is the admin. How can I assist you?', time: Date.now()-60000 }
-      ]
-    };
+    // --- Shared Chat Data via localStorage for User/Admin/Agent Demo ---
     let chatWidgetCurrent = 'Agent';
     let chatWidgetPolling = null;
 
+    function getChatHistory(role) {
+      // role: 'Agent' or 'Admin'
+      let data = [];
+      try {
+        data = JSON.parse(localStorage.getItem('chat_' + role)) || [];
+      } catch (e) { data = []; }
+      return data;
+    }
+    function setChatHistory(role, arr) {
+      localStorage.setItem('chat_' + role, JSON.stringify(arr));
+    }
+
     function renderChatWidget() {
       chatWidgetMessages.innerHTML = '';
-      (chatWidgetData[chatWidgetCurrent] || []).forEach(msg => {
+      let chatData = getChatHistory(chatWidgetCurrent);
+      if (chatData.length === 0) {
+        // Show welcome message
+        let welcome = chatWidgetCurrent === 'Agent' ? 'Hello! How can I help you today?' : 'Hi! This is the admin. How can I assist you?';
+        chatData.push({ sender: chatWidgetCurrent, text: welcome, time: Date.now()-60000 });
+        setChatHistory(chatWidgetCurrent, chatData);
+      }
+      chatData.forEach(msg => {
         const div = document.createElement('div');
         div.style.marginBottom = '0.7em';
         div.style.textAlign = msg.sender === 'You' ? 'right' : 'left';
-        div.innerHTML = `<span style="display:inline-block;background:${msg.sender==='You'?'#2563eb':'#e0e7ff'};color:${msg.sender==='You'?'#fff':'#2563eb'};padding:0.5em 1em;border-radius:8px;max-width:70%;font-size:1em;">${msg.text}</span>`;
+        div.innerHTML = `<span style=\"display:inline-block;background:${msg.sender==='You'?'#2563eb':'#e0e7ff'};color:${msg.sender==='You'?'#fff':'#2563eb'};padding:0.5em 1em;border-radius:8px;max-width:70%;font-size:1em;\">${msg.text}</span>`;
         chatWidgetMessages.appendChild(div);
       });
       chatWidgetMessages.scrollTop = chatWidgetMessages.scrollHeight;
-    }
-
-    function simulateWidgetReply(agent, userMsg) {
-      setTimeout(() => {
-        let reply = '';
-        if (agent === 'Agent') reply = 'Agent: Thank you for your message!';
-        else reply = 'Admin: We have received your message.';
-        chatWidgetData[agent].push({ sender: agent, text: reply, time: Date.now() });
-        if (chatWidgetCurrent === agent) renderChatWidget();
-      }, 1200 + Math.random()*1200);
     }
 
     chatWidgetHeader.onclick = function() {
@@ -350,11 +388,12 @@
         e.preventDefault();
         const val = chatWidgetInput.value.trim();
         if (!val) return;
-        if (!chatWidgetData[chatWidgetCurrent]) chatWidgetData[chatWidgetCurrent] = [];
-        chatWidgetData[chatWidgetCurrent].push({ sender: 'You', text: val, time: Date.now() });
+        let chatData = getChatHistory(chatWidgetCurrent);
+        chatData.push({ sender: 'You', text: val, time: Date.now() });
+        setChatHistory(chatWidgetCurrent, chatData);
         chatWidgetInput.value = '';
         renderChatWidget();
-        simulateWidgetReply(chatWidgetCurrent, val);
+        // No auto-reply here; reply comes from dashboard
       };
     }
     // Polling to simulate real-time updates
@@ -362,10 +401,89 @@
       if (chatWidgetPolling) clearInterval(chatWidgetPolling);
       chatWidgetPolling = setInterval(() => {
         renderChatWidget();
-      }, 1500);
+      }, 1200);
     }
     startChatWidgetPolling();
     renderChatWidget();
+
+    // --- Quick Login Modal Logic ---
+    const quickLoginBtn = document.getElementById('quickLoginBtn');
+    const loginModal = document.getElementById('loginModal');
+    const loginModalClose = document.getElementById('loginModalClose');
+    const quickLoginForm = document.getElementById('quickLoginForm');
+    const adminFields = document.getElementById('adminFields');
+    const agentFields = document.getElementById('agentFields');
+    const loginAsAdminBtn = document.getElementById('loginAsAdminBtn');
+    const loginAsAgentBtn = document.getElementById('loginAsAgentBtn');
+    const adminEmail = document.getElementById('adminEmail');
+    const adminCode = document.getElementById('adminCode');
+    const agentEmail = document.getElementById('agentEmail');
+    const agentCode = document.getElementById('agentCode');
+
+    function showFields(role) {
+      if (role === 'admin') {
+        adminFields.style.display = '';
+        agentFields.style.display = 'none';
+      } else if (role === 'agent') {
+        adminFields.style.display = 'none';
+        agentFields.style.display = '';
+      }
+    }
+
+    if (quickLoginBtn && loginModal && loginModalClose) {
+      quickLoginBtn.onclick = function() {
+        loginModal.style.display = 'flex';
+        showFields('admin'); // Default to admin fields
+      };
+      loginModalClose.onclick = function() {
+        loginModal.style.display = 'none';
+      };
+      loginModal.onclick = function(e) {
+        if (e.target === loginModal) loginModal.style.display = 'none';
+      };
+    }
+
+    if (loginAsAdminBtn) {
+      loginAsAdminBtn.onclick = function(e) {
+        e.preventDefault();
+        showFields('admin');
+        // Validate admin fields (demo: just check not empty)
+        if (!adminEmail.value.trim()) {
+          adminEmail.focus();
+          return;
+        }
+        if (!adminCode.value.trim()) {
+          adminCode.focus();
+          return;
+        }
+        // For demo, redirect
+        window.location.href = 'admin_dashboard.html';
+      };
+    }
+    if (loginAsAgentBtn) {
+      loginAsAgentBtn.onclick = function(e) {
+        e.preventDefault();
+        showFields('agent');
+        // Validate agent fields (demo: just check not empty)
+        if (!agentEmail.value.trim()) {
+          agentEmail.focus();
+          return;
+        }
+        if (!agentCode.value.trim()) {
+          agentCode.focus();
+          return;
+        }
+        // For demo, redirect
+        window.location.href = 'dashboard.html';
+      };
+    }
+
+    // Show correct fields when modal opens (default admin)
+    if (loginModal) {
+      loginModal.addEventListener('show', function() {
+        showFields('admin');
+      });
+    }
   </script>
 </body>
 </html>
